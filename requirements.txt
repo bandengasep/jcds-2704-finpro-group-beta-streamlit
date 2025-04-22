@@ -1,0 +1,16 @@
+numpy
+pandas
+matplotlib
+seaborn
+missingno
+scipy
+statsmodels
+category-encoders
+imblearn
+xgboost
+lightgbm
+catboost
+shap
+streamlit
+joblib
+scikit-learn==1.5.2
