@@ -97,7 +97,7 @@ header_image = Image.open("contoso_header.png")
 st.image(header_image, use_container_width=True)
 
 # Navigation Buttons
-col1, col2, col3 = st.columns([1, 2, 0.3])
+col1, col2, col3 = st.columns([1, 2, 0.5])
 with col1:
     st.write("")
 with col3:
