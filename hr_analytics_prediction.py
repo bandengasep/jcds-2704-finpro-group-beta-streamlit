@@ -73,13 +73,13 @@ def create_gauge_chart(probability):
             'borderwidth': 2,
             'bordercolor': text_color,
             'steps': [
-                {'range': [0, 0.41], 'color': "#90EE90"},
-                {'range': [0.41, 1], 'color': "#FF6347"}
+                {'range': [0, 0.48], 'color': "#90EE90"},
+                {'range': [0.48, 1], 'color': "#FF6347"}
             ],
             'threshold': {
                 'line': {'color': "#0e1117", 'width': 4},
                 'thickness': 1,
-                'value': 0.41
+                'value': 0.48
             }
         }))
 
@@ -212,7 +212,7 @@ else:
             fig = create_gauge_chart(prediction)
             st.plotly_chart(fig, use_container_width=True)
 
-            if prediction > 0.41:
+            if prediction > 0.48:
                 leave_risk = "🚫 Likely to Leave"
                 bg_color = "rgba(255, 99, 71, 0.1)"
             else:
