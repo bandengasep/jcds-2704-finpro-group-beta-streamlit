@@ -94,7 +94,7 @@ def create_gauge_chart(probability):
 
 # Header
 header_image = Image.open("contoso_header.png")
-st.image(header_image, use_column_width=True)
+st.image(header_image, use_container_width=True)
 
 # Navigation Buttons
 col1, col2, col3 = st.columns([1, 2, 0.3])
