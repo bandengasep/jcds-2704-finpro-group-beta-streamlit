@@ -6,6 +6,9 @@ import plotly.graph_objects as go
 from PIL import Image
 from models import AdjustedThresholdModel
 
+# Constants
+THRESHOLD = 0.48  # Threshold for classification
+
 # Set page config
 st.set_page_config(page_title="Job Intention Predictor", page_icon="🏃‍♀️💨", layout="wide")
 
@@ -48,43 +51,55 @@ st.markdown("""
 # Load model
 @st.cache_resource
 def load_model():
-    with open('final_model.sav', 'rb') as file:
-        model = pickle.load(file)
-    return model
+    """
+    Load the base model and wrap it with AdjustedThresholdModel
+    to apply custom threshold for binary classification
+    """
+    try:
+        with open('final_model.sav', 'rb') as file:
+            base_model = pickle.load(file)
+
+        # Wrap the base model with AdjustedThresholdModel
+        adjusted_model = AdjustedThresholdModel(base_model, THRESHOLD)
+        return adjusted_model
+    
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
 model = load_model()
 
 # Gauge chart
 def create_gauge_chart(probability):
-    # Force background to be black
-    bg_color = "#0e1117"
-    text_color = "white"
+    text_color = "black"
+    bg_color = "#e8eaee"  # Dark background color
 
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=probability,
         domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Candidate Leave Probability", 'font': {'size': 24, 'color': text_color}},
-        number={'font': {'size': 20, 'color': text_color}},
+        number={'font': {'size': 20, 'color': text_color}, 'suffix': '%', 'valueformat': '.1f'},
         gauge={
-            'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "#ffffff"},
+            'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "#0a325e"},
             'bar': {'color': "#4CAF50"},
-            'bgcolor': bg_color,
             'borderwidth': 2,
             'bordercolor': text_color,
             'steps': [
-                {'range': [0, 0.48], 'color': "#90EE90"},
-                {'range': [0.48, 1], 'color': "#FF6347"}
+                {'range': [0, THRESHOLD], 'color': "#90EE90"},  # Stay - green
+                {'range': [THRESHOLD, 1], 'color': "#FF6347"}   # Leave - red
             ],
             'threshold': {
-                'line': {'color': "#0e1117", 'width': 4},
+                'line': {'color': "#f29406", 'width': 4},
                 'thickness': 1,
-                'value': 0.48
-            }
+                'value': THRESHOLD
+            },
+            'bgcolor': "#292929"  # Background color for the gauge itself
         }))
 
     fig.update_layout(
-        paper_bgcolor=bg_color,
+        paper_bgcolor=bg_color,  # Background color for the chart area
+        plot_bgcolor=bg_color,   # Background color for the plot area
         font={'color': text_color, 'family': "Arial"},
         height=300,
         margin=dict(l=10, r=10, t=50, b=10)
@@ -191,7 +206,7 @@ else:
         company_size = st.selectbox("Previous Company Size", options=['missing', '<10','10-49','50-99','100-500','500-999','1000-4999','5000-9999','>10000'])
         company_type = st.selectbox("Previous Company Type", options=['Pvt Ltd', 'Funded Startup', 'Early Stage Startup', 'Public Sector', 'NGO', 'Other'])
         last_new_job_bin = st.selectbox("Years Spent in Previous Job", options=['<=1', '2-3', '>=4'])
-        city_development_index = st.slider("City Development Index (CDI):", min_value=0.44, max_value=0.95, value=100.0, step=0.01)
+        city_development_index = st.slider("City Development Index (CDI):", min_value=0.44, max_value=0.95, value=0.70, step=0.01)
 
     input_data = pd.DataFrame({
         'city': [city],
@@ -208,11 +223,18 @@ else:
 
     if st.button("Predict 🔍"):
         try:
-            prediction = model.predict_proba(input_data)[0][1]
-            fig = create_gauge_chart(prediction)
+            # Get probability of leaving
+            probability = model.predict_proba(input_data)[0][1]
+
+            # Get binary prediction using the adjusted threshold
+            prediction = model.predict(input_data)[0]
+
+            # Create and display gauge chart
+            fig = create_gauge_chart(probability)
             st.plotly_chart(fig, use_container_width=True)
 
-            if prediction > 0.48:
+            # Display prediction result
+            if prediction == 1:
                 leave_risk = "🚫 Likely to Leave"
                 bg_color = "rgba(255, 99, 71, 0.1)"
             else:
@@ -223,7 +245,7 @@ else:
                 f"""
                 <div class="metric-container" style="background-color: {bg_color};">
                     <h3>{leave_risk}</h3>
-                    <h4>Probability: {prediction:.2%}</h4>
+                    <h4>Probability: {probability:.2%}</h4>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -231,3 +253,4 @@ else:
 
         except Exception as e:
             st.error(f"Prediction error: {e}")
+            st.error("Please check your input data and try again.")
